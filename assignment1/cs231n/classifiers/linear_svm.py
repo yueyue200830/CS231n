@@ -37,7 +37,7 @@ def svm_loss_naive(W, X, y, reg):
             if margin > 0:
                 loss += margin
 
-                # Calculate dW
+                # Compute dW
                 dW[:, j] += X[i]
                 dW[:, y[i]] -= X[i]
 
@@ -82,7 +82,24 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = X.shape[0]
+
+    # Compute all scores
+    scores = X.dot(W)
+
+    # Get correct scores
+    correct_index = (np.arange(num_train), y)
+    correct_score = scores[correct_index]
+
+    # Compute margins including the correct class
+    margins = scores - correct_score.reshape(-1, 1) + 1
+    margins = np.maximum(0, margins)
+
+    # Set all corrent class's margin to be 0
+    margins[correct_index] = 0
+
+    # Compute loss
+    loss = np.mean(np.sum(margins, axis = 1)) + reg * np.sum(W * W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -97,7 +114,15 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Generate a multiple matrix
+    gradient_matrix = np.zeros(margins.shape)
+    gradient_matrix[np.nonzero(margins)] = 1
+
+    # Count subtract number
+    gradient_matrix[correct_index] = -np.count_nonzero(margins, axis = 1)
+
+    # Compute dW
+    dW = X.T.dot(gradient_matrix) / num_train + reg * 2 * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
