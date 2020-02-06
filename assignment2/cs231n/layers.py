@@ -196,7 +196,18 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        sample_mean = np.mean(x, axis=0)
+        x_dif = x - sample_mean
+        sample_var = np.mean(np.square(x_dif), axis=0)
+        std = np.sqrt(sample_var + eps)
+
+        x_hat = x_dif / std
+        out = gamma * x_hat + beta
+
+        running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+        running_var = momentum * running_var + (1 - momentum) * sample_var
+
+        cache = (x_hat, gamma, x, x_dif, sample_mean, sample_var, std)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -211,7 +222,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        x_hat = (x - running_mean) / np.sqrt(running_var + eps)
+        out = gamma * x_hat + beta
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -253,7 +265,23 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x_hat, gamma, x, x_dif, mean, var, std = cache
+    N = dout.shape[0]
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_hat, axis=0)
+
+    dx_hat = dout * gamma
+    dx_dif1 = dx_hat / std
+    dstd = np.sum(- dx_hat * x_dif / np.square(std), axis=0)
+    dvar = dstd / (2 * std)
+    dx_dif_square = dvar * np.ones(x.shape) / N
+    dx_dif2 = dx_dif_square * 2 * x_dif
+    dx_dif = dx_dif1 + dx_dif2
+    dx1 = dx_dif.copy()
+    dmean = - np.sum(dx_dif, axis=0)
+    dx2 = dmean * np.ones(x.shape) / N
+    dx = dx1 + dx2
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
