@@ -316,7 +316,18 @@ def batchnorm_backward_alt(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x_hat, gamma, x, x_dif, mean, var, std = cache
+    N = dout.shape[0]
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_hat, axis=0)
+
+    dx_hat = dout * gamma
+    dx1 = dx_hat / std
+    dx2 = - np.sum(dx_hat, axis=0) / (N * std)
+    dx3_mid = np.sum(dx_hat * x_dif, axis=0) / (N * (std ** 3))
+    dx3 = - x_dif * dx3_mid
+    dx = dx1 + dx2 + dx3
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -362,7 +373,16 @@ def layernorm_forward(x, gamma, beta, ln_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    sample_mean = np.mean(x.T, axis=0)
+    x_dif = x.T - sample_mean
+    sample_var = np.mean(np.square(x_dif), axis=0)
+    std = np.sqrt(sample_var + eps)
+
+    x_hat = x_dif / std
+    x_hat = x_hat.T
+    out = gamma * x_hat + beta
+
+    cache = (x_hat, gamma, x, x_dif, sample_mean, sample_var, std)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -397,7 +417,24 @@ def layernorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x_hat, gamma, x, x_dif, mean, var, std = cache
+    N = dout.shape[0]
+    D = dout.shape[1]
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_hat, axis=0)
+
+    dx_hat = (dout * gamma).T
+    dx_dif1 = dx_hat / std
+    dstd = np.sum(- dx_hat * x_dif / np.square(std), axis=0)
+    dvar = dstd / (2 * std)
+    dx_dif_square = dvar * np.ones(x.T.shape) / D
+    dx_dif2 = dx_dif_square * 2 * x_dif
+    dx_dif = dx_dif1 + dx_dif2
+    dx1 = dx_dif.copy()
+    dmean = - np.sum(dx_dif, axis=0)
+    dx2 = dmean * np.ones(x.T.shape) / D
+    dx = (dx1 + dx2).T
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
