@@ -294,6 +294,10 @@ class FullyConnectedNet(object):
                         cur_X, cur_cache = affine_batchnorm_relu_forward(cur_X, cur_W, cur_b, cur_gamma, cur_beta, self.bn_params[i])
                     else:
                         cur_X, cur_cache = affine_layernorm_relu_forward(cur_X, cur_W, cur_b, cur_gamma, cur_beta, self.bn_params[i])
+
+                if self.use_dropout:
+                    cur_X, dp_cache = dropout_forward(cur_X, self.dropout_param)
+                    cur_cache = (cur_cache, dp_cache)
             else:
                 scores, cur_cache = affine_forward(cur_X, cur_W, cur_b)
 
@@ -331,16 +335,21 @@ class FullyConnectedNet(object):
             cur_b = 'b' + str(i)
             cur_gamma = 'gamma' + str(i)
             cur_beta = 'beta' + str(i)
+            cur_cache = caches.pop()
 
             if i == self.num_layers:
-                dout, grads[cur_W], grads[cur_b] = affine_backward(dout, caches.pop())
+                dout, grads[cur_W], grads[cur_b] = affine_backward(dout, cur_cache)
             else:
+                if self.use_dropout:
+                    cur_cache, dp_cache = cur_cache
+                    dout = dropout_backward(dout, dp_cache)
+
                 if self.normalization == None:
-                    dout, grads[cur_W], grads[cur_b] = affine_relu_backward(dout, caches.pop())
+                    dout, grads[cur_W], grads[cur_b] = affine_relu_backward(dout, cur_cache)
                 elif self.normalization == 'batchnorm':
-                    dout, grads[cur_W], grads[cur_b], grads[cur_gamma], grads[cur_beta] = affine_batchnorm_relu_backward(dout, caches.pop())
+                    dout, grads[cur_W], grads[cur_b], grads[cur_gamma], grads[cur_beta] = affine_batchnorm_relu_backward(dout, cur_cache)
                 else:
-                    dout, grads[cur_W], grads[cur_b], grads[cur_gamma], grads[cur_beta] = affine_layernorm_relu_backward(dout, caches.pop())
+                    dout, grads[cur_W], grads[cur_b], grads[cur_gamma], grads[cur_beta] = affine_layernorm_relu_backward(dout, cur_cache)
 
             grads[cur_W] += self.reg * self.params[cur_W]
             loss += 0.5 * self.reg * np.sum(np.square(self.params[cur_W]))
