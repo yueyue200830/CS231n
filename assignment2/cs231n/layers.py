@@ -792,11 +792,9 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     N, C, H, W = x.shape
-    x_ = np.array([x[:, i, :, :].ravel() for i in range(C)]).T
+    x_ = np.reshape(np.transpose(x, (0, 2, 3, 1)), (-1, C))
     out_, cache = batchnorm_forward(x_, gamma, beta, bn_param)
-    out = np.zeros_like(x)
-    for i in range(C):
-        out[:, i, :, :] = out_[:, i].reshape(N, H, W)
+    out = np.transpose(np.reshape(out_, (N, H, W, C)), (0, 3, 1, 2))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -831,11 +829,9 @@ def spatial_batchnorm_backward(dout, cache):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     N, C, H, W = dout.shape
-    dout_ = np.array([dout[:, i, :, :].ravel() for i in range(C)]).T
+    dout_ = np.reshape(np.transpose(dout, (0, 2, 3, 1)), (-1, C))
     dx_, dgamma, dbeta = batchnorm_backward(dout_, cache)
-    dx = np.zeros_like(dout)
-    for i in range(C):
-        dx[:, i, :, :] = dx_[:, i].reshape(N, H, W)
+    dx = np.transpose(np.reshape(dx_, (N, H, W, C)), (0, 3, 1, 2))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
